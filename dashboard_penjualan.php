@@ -43,7 +43,6 @@ if (array_sum($beli) == 0) {
     $jumlah[$i] = rand(1, 5);
     $total[$i] = $barang[$i][2] * $jumlah[$i];
 }
-
 ?>
 <!DOCTYPE html>
 <html>
@@ -184,11 +183,35 @@ if (array_sum($beli) == 0) {
                 $grandtotal += $total[$i];
             }
         }
+
+        /* ================================
+           PERHITUNGAN DISKON
+        ==================================*/
+        if ($grandtotal < 50000) {
+            $diskon_persen = 5;
+        } elseif ($grandtotal <= 100000) {
+            $diskon_persen = 10;
+        } else {
+            $diskon_persen = 15;
+        }
+
+        $diskon = ($grandtotal * $diskon_persen) / 100;
+        $total_bayar = $grandtotal - $diskon;
         ?>
 
         <tr class="total-row">
             <td colspan="4" align="right">Total Belanja :</td>
             <td>Rp <?= number_format($grandtotal, 0, ',', '.') ?></td>
+        </tr>
+
+        <tr class="total-row">
+            <td colspan="4" align="right">Diskon (<?= $diskon_persen ?>%) :</td>
+            <td>- Rp <?= number_format($diskon, 0, ',', '.') ?></td>
+        </tr>
+
+        <tr class="total-row">
+            <td colspan="4" align="right"><b>Total Bayar :</b></td>
+            <td><b>Rp <?= number_format($total_bayar, 0, ',', '.') ?></b></td>
         </tr>
 
     </table>
