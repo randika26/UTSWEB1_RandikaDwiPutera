@@ -1,38 +1,39 @@
 <?php
 session_start();
 
+// Daftar barang (contoh)
+$barangList = [
+    "A01" => ["nama" => "Milku", "harga" => 5000],
+    "A02" => ["nama" => "Fanta", "harga" => 6000],
+    "A03" => ["nama" => "Oreo", "harga" => 12000],
+    "A04" => ["nama" => "Chitato", "harga" => 12000],
+    "K001" => ["nama" => "Teh Pucuk", "harga" => 3000], 
+];
 
-$inputKode = isset($_POST['kode']) ? strtoupper($_POST['kode']) : '';
-$inputNama = isset($_POST['nama']) ? $_POST['nama'] : '';
-$inputHarga = isset($_POST['harga']) ? str_replace('.', '', $_POST['harga']) : ''; // Menghapus format ribuan
-$inputJumlah = isset($_POST['jumlah']) ? intval($_POST['jumlah']) : '';
-$statusMessage = '';
-
+// Tombol Kosongkan Keranjang
 if (isset($_POST['clear'])) {
     unset($_SESSION['cart']);
+    // Redirect untuk membersihkan POST dan query string
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
 }
 
 // Proses Tambah Barang
 if (isset($_POST['tambah'])) {
     $kode = strtoupper($_POST['kode']);
-    $nama = $_POST['nama'];
-    // Hapus format Rupiah atau titik ribuan untuk perhitungan
-    $harga = intval(str_replace('.', '', $_POST['harga'])); 
     $jumlah = intval($_POST['jumlah']);
 
-    // Validasi dasar
-    if (empty($kode) || empty($nama) || empty($harga) || empty($jumlah) || $harga <= 0 || $jumlah <= 0) {
-        $statusMessage = 'Harap isi semua kolom (Kode, Nama, Harga, Jumlah) dengan nilai yang valid.';
-    } else {
-        // Data valid, proses penambahan
+    // Validasi
+    if (isset($barangList[$kode]) && $jumlah > 0) {
+        $nama = $barangList[$kode]["nama"];
+        $harga = $barangList[$kode]["harga"];
         $subtotal = $harga * $jumlah;
         $found = false;
 
-        // Cek jika barang sudah ada di keranjang (didasarkan pada kode)
+        // Cek jika barang sudah ada di keranjang
         if (isset($_SESSION['cart'])) {
             foreach ($_SESSION['cart'] as $key => $item) {
                 if ($item['kode'] === $kode) {
-                    // Jika kode sama, hanya update jumlah dan subtotal
                     $_SESSION['cart'][$key]['jumlah'] += $jumlah;
                     $_SESSION['cart'][$key]['subtotal'] += $subtotal;
                     $found = true;
@@ -51,14 +52,10 @@ if (isset($_POST['tambah'])) {
                 "subtotal" => $subtotal
             ];
         }
-        
-        // Bersihkan input setelah berhasil
-        $inputKode = '';
-        $inputNama = '';
-        $inputHarga = '';
-        $inputJumlah = '';
-        $statusMessage = 'Barang berhasil ditambahkan ke daftar pembelian.';
     }
+    // Redirect setelah penambahan berhasil untuk mencegah resubmission form
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
 }
 
 // Hitung total, diskon, dan grand total
@@ -72,7 +69,7 @@ if (isset($_SESSION['cart'])) {
 // Logika Diskon
 $persenDiskon = 0;
 if ($total > 0 && $total < 50000) {
-    $persenDiskon = 5;
+    $persenDiskon = 5; 
 } elseif ($total >= 50000 && $total <= 100000) {
     $persenDiskon = 10;
 } elseif ($total > 100000) {
@@ -92,8 +89,9 @@ function formatRupiah($angka) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>POLGAN MART - Input Manual</title>
+    <title>POLGAN MART</title>
     <style>
+        /* CSS Styling */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f7f7f7; padding: 20px; display: flex; justify-content: center; }
         .main-container { width: 800px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); margin-top: 30px; }
         .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #eee; }
@@ -111,11 +109,20 @@ function formatRupiah($angka) {
         .input-field:focus { border-color: #0d6efd; }
         .form-row { display: flex; gap: 15px; }
         .form-row .input-group { flex: 1; }
-        .button-row { display: flex; gap: 10px; margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        
+        /* CSS untuk button-row yang sudah disederhanakan */
+        .button-row { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 15px; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 20px; 
+            justify-content: flex-start; /* Menyusun tombol dari kiri */
+        }
         .button-row button { padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background-color 0.2s; }
         .btn-tambahkan-small { background: #0d6efd; color: white; border: none; width: 120px; }
         .btn-batal { background: #f8f9fa; color: #333; border: 1px solid #ccc; width: 80px; }
-        .btn-tambahkan-large { flex-grow: 1; background: #0d6efd; color: white; border: none; height: 42px; margin: 0; }
+
         .purchase-list h3 { text-align: center; font-size: 16px; margin: 20px 0 10px 0; color: #333; font-weight: 600; }
         .table-list { width: 100%; border-collapse: collapse; font-size: 14px; color: #333; }
         .table-list th, .table-list td { padding: 10px 15px; text-align: left; }
@@ -153,42 +160,41 @@ function formatRupiah($angka) {
     </div>
     
     <div class="input-area">
-        <form method="post">
+        <form method="post" id="form-tambah">
             
-            <?php if ($statusMessage): ?>
-                <p style="color: <?= (strpos($statusMessage, 'berhasil') !== false) ? 'green' : 'red' ?>; font-weight: bold;"><?= $statusMessage ?></p>
-            <?php endif; ?>
-
             <div class="input-group">
                 <label>Kode Barang</label>
-                <input type="text" name="kode" class="input-field" placeholder="Masukkan Kode Barang (cth: A01)" 
-                       required value="<?= htmlspecialchars($inputKode) ?>">
+                <input type="text" name="kode" class="input-field" placeholder="Masukkan Kode Barang atau Pilih" required 
+                       list="kode_barang_list" oninput="getBarangData(this.value)"> 
+                
+                <datalist id="kode_barang_list">
+                    <?php foreach ($barangList as $kode => $barang): ?>
+                        <option value="<?= htmlspecialchars($kode) ?>"><?= htmlspecialchars($barang['nama']) ?></option>
+                    <?php endforeach; ?>
+                </datalist>
             </div>
             
             <div class="input-group">
                 <label>Nama Barang</label>
-                <input type="text" name="nama" class="input-field" placeholder="Masukkan Nama Barang" 
-                       required value="<?= htmlspecialchars($inputNama) ?>">
+                <input type="text" id="nama-barang-display" class="input-field" placeholder="Nama Barang (Otomatis)" readonly>
             </div>
 
             <div class="form-row">
                 <div class="input-group">
                     <label>Harga</label>
-                    <input type="text" name="harga" class="input-field" placeholder="Masukkan Harga (cth: 5000)" 
-                           required value="<?= htmlspecialchars($inputHarga) ?>">
+                    <input type="text" id="harga-display" class="input-field" placeholder="Harga Satuan (Otomatis)" readonly>
                 </div>
                 <div class="input-group">
                     <label>Jumlah</label>
-                    <input type="number" name="jumlah" class="input-field" min="1" placeholder="Masukkan Jumlah" 
-                           required value="<?= htmlspecialchars($inputJumlah) ?>">
+                    <input type="number" name="jumlah" class="input-field" min="1" placeholder="Masukkan Jumlah" required>
                 </div>
             </div>
 
             <div class="button-row">
                 <button class="btn-tambahkan-small" name="tambah">Tambahkan</button>
-                <button type="button" class="btn-batal" onclick="window.location.href=window.location.href">Batal</button>
-                <button type="button" class="btn-tambahkan-large" disabled>Tambahkan</button>
+                <button type="button" class="btn-batal" onclick="document.getElementById('form-tambah').reset(); document.getElementById('nama-barang-display').value = ''; document.getElementById('harga-display').value = '';">Batal</button>
             </div>
+            
         </form>
     </div>
     
@@ -247,5 +253,35 @@ function formatRupiah($angka) {
     </div>
 
 </div>
+
+<script>
+    // Data barang dari PHP diubah ke JavaScript agar bisa diakses real-time oleh browser
+    const barangListJS = <?= json_encode($barangList) ?>;
+
+    /**
+     * Fungsi yang dipanggil saat ada input (oninput) di kolom Kode Barang.
+     */
+    function getBarangData(kode) {
+        kode = kode.toUpperCase().trim();
+        const namaDisplay = document.getElementById('nama-barang-display');
+        const hargaDisplay = document.getElementById('harga-display');
+        
+        // Cek jika kode ditemukan di daftar barang
+        if (barangListJS[kode]) {
+            namaDisplay.value = barangListJS[kode]['nama'];
+            hargaDisplay.value = 'Rp ' + number_format(barangListJS[kode]['harga']);
+        } else {
+            // Jika kode tidak ditemukan, bersihkan field
+            namaDisplay.value = '';
+            hargaDisplay.value = '';
+        }
+    }
+
+    // Fungsi format angka untuk tampilan Rupiah di JavaScript
+    function number_format(number) {
+        return new Intl.NumberFormat('id-ID').format(number);
+    }
+</script>
+
 </body>
 </html>
